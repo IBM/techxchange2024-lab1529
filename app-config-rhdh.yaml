@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config-rhdh
+  namespace: default
+data:
+  app-config-rhdh.yaml: |
+    app:
+      title: rhdh
+      baseUrl: https://backstage-developer-hub-default.apps.ocp.ibm.edu/
+    backend:
+      baseUrl: https://backstage-developer-hub-default.apps.ocp.ibm.edu/
+      cors: 
+        origin: https://backstage-developer-hub-default.apps.ocp.ibm.edu/
+      auth:
+        keys:
+          - secret: ${BACKEND_SECRET}
+    integrations:
+      github:
+        - host: github.com
+          token: ${RHDH_GITHUB_INTEGRATION_PERSONAL_ACCESS_TOKEN}
+          apps:
+            - appId: ${RHDH_GITHUB_INTEGRATION_APP_ID}
+              clientId: ${RHDH_GITHUB_INTEGRATION_APP_CLIENT_ID}
+              clientSecret: ${RHDH_GITHUB_INTEGRATION_APP_CLIENT_SECRET}
+              webhookUrl: none
+              webhookSecret: none
+              privateKey: ${RHDH_GITHUB_INTEGRATION_APP_PRIVATE_KEY}
+    catalog:
+      providers:
+        keycloakOrg:
+          production:
+            baseUrl: https://demo-keycloak-instance.apps.ocp.ibm.edu
+            loginRealm: rhdh # ${KEYCLOAK_REALM}
+            realm: rhdh # ${KEYCLOAK_REALM}
+            clientId: rhdh-client
+            clientSecret: 7iKyQUwyApIojzOlSj82vUWIhejv41E5
+            # highlight-add-start
+            schedule: # optional; same options as in TaskScheduleDefinition
+              # supports cron, ISO duration, "human duration" as used in code
+              frequency: { minutes: 1 }
+              # supports ISO duration, "human duration" as used in code
+              timeout: { minutes: 3 }
+              initialDelay: { seconds: 15 }
+              # highlight-add-end
+    kubernetes:
+      clusterLocatorMethods:
+        - clusters:
+            - authProvider: serviceAccount
+              name: rhdh-sa
+              serviceAccountToken: ${SA_TOKEN}
+              skipTLSVerify: true
+              url: https://api.ocp.ibm.edu:6443
+          type: config
+      serviceLocatorMethod:
+        type: multiTenant
+    argocd:
+      appLocatorMethods:
+        - type: 'config'
+          instances:
+            - name: argocd
+              url: ${ARGOCD_URL}
+              username: admin 
+              password: ${ARGOCD_PASS}
+    auth:
+      environment: production
+      session:
+        secret: ${BACKEND_SECRET}
+      providers:
+        oidc:
+          production:
+            clientId: rhdh-client
+            clientSecret: 7iKyQUwyApIojzOlSj82vUWIhejv41E5
+            metadataUrl: https://demo-keycloak-instance.apps.ocp.ibm.edu/realms/rhdh/.well-known/openid-configuration
+            prompt: auto
+            signIn:
+              resolvers:
+                - resolver: preferredUsernameMatchingUserEntityName
+    signInPage: oidc
+binaryData: {}
